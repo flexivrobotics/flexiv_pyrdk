@@ -1,4 +1,5 @@
 import math
+from decimal import Decimal, ROUND_DOWN
 from typing import List
 
 from scipy.spatial.transform import Rotation
@@ -15,11 +16,11 @@ class RoboticsUtil:
         :return:
         """
         deg = math.degrees(radian)
-        deg = round(deg, precision)
-        return deg
+        deg = Decimal(deg).quantize(Decimal(f'1.{"0"*precision}'), rounding=ROUND_DOWN)
+        return float(deg)
 
     @staticmethod
-    def deg_to_rad(degree: float, precision: int = 4) -> float:
+    def deg_to_rad(degree: float, precision: int = 8) :
         """
         角度转弧度
         :param degree: 角度
@@ -27,8 +28,8 @@ class RoboticsUtil:
         :return:
         """
         rad = math.radians(degree)
-        rad = round(rad, precision)
-        return rad
+        rad = Decimal(rad).quantize(Decimal(f'1.{"0"*precision}'), rounding=ROUND_DOWN)
+        return float(rad)
 
     @staticmethod
     def euler_to_quat(euler: List[float]) -> List[float]:
