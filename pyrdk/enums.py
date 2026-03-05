@@ -1133,3 +1133,17 @@ class GripperNameEnum(Enum):
     GripperFlexivModbus = "GripperFlexivModbus"
     Robotiq_2F_85 = "Robotiq-2F-85"
     Robotiq_Hand_E = "Robotiq-Hand-E"
+
+
+class DeviceNameEnum(Enum):
+    GripperDahuan = "GripperDahuan"
+    GripperDahuanModbus = "GripperDahuanModbus"
+    Flexiv_GN01 = "Flexiv-GN01"
+    GripperFlexivModbus = "GripperFlexivModbus"
+    Robotiq_2F_85 = "Robotiq-2F-85"
+    Robotiq_Hand_E = "Robotiq-Hand-E"
+    IndustrialCam = "IndustrialCam"
+    Mirka_AIROS_550CV = "Mirka-AIROS-550CV"
+    Conveyor_SerialPort_1 = "Conveyor-SerialPort-1"
+    Conveyor_SerialPort_2 = "Conveyor-SerialPort-2"
+    Conveyor_SerialPort_3 = "Conveyor-SerialPort-3"

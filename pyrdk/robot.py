@@ -1,4 +1,5 @@
 import math
+import os.path
 import time
 from typing import List
 
@@ -7,6 +8,7 @@ import flexivrdk
 from pyrdk.core.global_var import GlobalVariable
 from pyrdk.core.plan import Plan
 from pyrdk.core.primitives import Primitive
+from pyrdk.enums import DeviceNameEnum
 from pyrdk.exceptions import (
     GlobalVariableSetException,
     PlanNotFoundException,
@@ -33,6 +35,8 @@ class Robot:
         """
         self.ip = ip
         self.version_check = version_check
+        # default safety password
+        self._safety_pwd = "flexiv"
         self._robot = None
         self._arm_serial_number = None
         self._cb_serial_number = None
@@ -82,8 +86,8 @@ class Robot:
         self.init_robot_versions()
         try:
             self._robot = flexivrdk.Robot(self._arm_serial_number)
-        except:
-            pass
+        except Exception as ex:
+            logger.error(ex)
 
     @property
     def arm_serial_number(self) -> str:
@@ -602,7 +606,7 @@ class Robot:
             ), f"joint_impedance_stiffness[{i}]={values[i]} out of valid range [0, {stiffness}]"
         self.switch_mode_to_joint_impedance_control()
         self._joint_impedance_stiffness = [
-            round(s / RoboticsUtil.deg_to_rad(1.0), 4) if not math.isinf(s) else s
+            round(s / RoboticsUtil.deg_to_rad(1.0), 2) if not math.isinf(s) else s
             for s in values
         ]
         damping = getattr(self, "_joint_impedance_damping_ratio", None)
@@ -698,7 +702,7 @@ class Robot:
         self.switch_mode_to_cartesian_motion_force_control()
         self._cartesian_impedance_stiffness = [
             float(linear) for linear in values[:3]
-        ] + [round(angular / RoboticsUtil.deg_to_rad(1.0), 4) for angular in values[3:]]
+        ] + [round(angular / RoboticsUtil.deg_to_rad(1.0), 2) for angular in values[3:]]
         damping = getattr(self, "_cartesian_impedance_damping_ratio", None)
         if damping is not None:
             self._robot.SetCartesianImpedance(
@@ -1154,8 +1158,8 @@ class Robot:
             velocity = [0] * 6
         p = pose[:3] + RoboticsUtil.euler_to_quat(pose[3:])
         v = velocity[:3] + [RoboticsUtil.rad_to_deg(v) for v in velocity[3:]]
-        max_angvel = RoboticsUtil.deg_to_rad(max_angular_vel, 4)
-        max_angacc = RoboticsUtil.deg_to_rad(max_angular_acc, 4)
+        max_angvel = RoboticsUtil.deg_to_rad(max_angular_vel)
+        max_angacc = RoboticsUtil.deg_to_rad(max_angular_acc)
         self._robot.SendCartesianMotionForce(
             p, wrench, v, max_linear_vel, max_angvel, max_linear_acc, max_angacc
         )
@@ -1229,3 +1233,130 @@ class Robot:
             self._robot.SetGlobalVariables(vars)
         except Exception as e:
             raise GlobalVariableSetException() from e
+
+    @property
+    def device_list(self) -> List[str]:
+        """
+        Get a list of device names.
+        :return:
+        """
+        device = flexivrdk.Device(self._robot)
+        d_lst = []
+        for d in device.list():
+            d_lst.append(DeviceNameEnum(d))
+        return d_lst
+
+    @property
+    def safety_password(self):
+        return self._safety_pwd
+
+    @safety_password.setter
+    def safety_password(self, new_password: str):
+        self._safety_pwd = new_password
+
+    @property
+    def current_joint_limits(self) -> dict:
+        """
+        Get current safety joint limits.
+        :return:
+        """
+        from pyrdk.core.safety import Safety
+
+        safety = Safety(self, self._safety_pwd)
+        return safety.current_joint_limits
+
+    @property
+    def safety_inputs(self) -> List[bool]:
+        """
+        Current reading from all safety input ports.
+        :return:
+        """
+        from pyrdk.core.safety import Safety
+
+        safety = Safety(self, self._safety_pwd)
+        return safety.inputs
+
+        return list(device.list().keys())
+
+    @property
+    def traj_files_list(self) -> List[str]:
+        """
+        A list of all trajectory files currently stored in the connected robot.
+        :return:
+        """
+        io = flexivrdk.FileIO(self._robot)
+        return io.traj_files_list()
+
+    @property
+    def projects_list(self):
+        """
+        A list of all user projects currently stored in the connected robot.
+        :return:
+        """
+        io = flexivrdk.FileIO(self._robot)
+        return io.projects_list()
+
+    def upload_traj_file(self, file_fullname: str):
+        """
+        Upload a local trajectory file (.traj) to the robot.
+        :param file_fullname:
+        :return:
+        """
+        assert os.path.exists(file_fullname), "Trajectory file does not exist"
+        assert os.path.getsize(file_fullname) <= 1024 * 1024, "Trajectory file size must be less than 1 MB"
+        file_dir, file_name = os.path.split(file_fullname)
+        io = flexivrdk.FileIO(self._robot)
+        io.UploadTrajFile(file_dir, file_name)
+
+    def download_traj_file_content(self, file_name: str):
+        """
+        Download a trajectory file (.traj) content from the robot.
+        :param file_name:
+        :return:
+        """
+        robot_trag_files = self.traj_files_list
+        assert file_name in robot_trag_files, f"Trajectory file {file_name} does not exist in robot"
+        io = flexivrdk.FileIO(self._robot)
+        return io.DownloadTrajFile(file_name)
+
+    def download_traj_file(self, file_name: str, save_dir: str):
+        """
+        Download a trajectory file (.traj) from the robot and save to the specified directory.
+        :param file_name:
+        :param save_dir:
+        :return:
+        """
+        robot_trag_files = self.traj_files_list
+        assert file_name in robot_trag_files, f"Trajectory file {file_name} does not exist in robot"
+        os.makedirs(save_dir, exist_ok=True)
+        io = flexivrdk.FileIO(self._robot)
+        io.DownloadTrajFile(file_name, save_dir)
+
+    def upload_project(self, project_dir: str):
+        """
+        Upload a local project to the robot.
+        :param project_dir:
+        :return:
+        """
+        from pathlib import Path
+        assert os.path.exists(project_dir), f"Project directory {project_dir} does not exist"
+        dir_path = Path(project_dir)
+        has_plan = any(dir_path.glob("*.plan"))
+        assert has_plan, f"Project directory {project_dir} does not contain any *.plan"
+        has_proj = any(dir_path.glob("*.proj"))
+        assert has_proj, f"Project directory {project_dir} does not contain any *.proj"
+        io = flexivrdk.FileIO(self._robot)
+        io.UploadProject(project_dir)
+
+    def download_project(self, project_name: str, save_dir: str):
+        """
+        Download a project from the robot and save to the specified directory.
+        :param project_name:
+        :param save_dir:
+        :return:
+        """
+        robot_prj_file_names = self.projects_list
+        assert project_name in robot_prj_file_names, f"Project name {project_name} does not exist in robot"
+        os.makedirs(save_dir, exist_ok=True)
+        io = flexivrdk.FileIO(self._robot)
+        io.DownloadProject(project_name, save_dir)
