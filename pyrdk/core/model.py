@@ -36,7 +36,10 @@ class Model:
         self._model.Reload()
 
     def sync_URDF(self, path):
-        """Sync the actual kinematic parameters of the connected robot into the template URDF"""
+        """
+        Sync the actual kinematic parameters of the connected robot into the template URDF
+        :param path: Path to the template URDF file that can be generated in flexiv_description.
+        """
         self._model.SyncURDF(path)
 
     def reachable(
@@ -103,3 +106,11 @@ class Model:
         """Compute the transformation matrix of the specified frame w.r.t. world frame"""
         self.update()
         return self._model.T(link_name)
+
+    def sync_kinematics_yaml(self, path: str):
+        """
+        Sync the actual kinematic parameters of the connected robot into the template YAML file.
+        :param path: path to the template YAML file located at [flexiv_description/config/.../default_kinematics.yaml].
+                     This template YAML file will be updated when the sync is finished.
+        """
+        return self._model.SyncKinematicsYAML(path)

@@ -19,7 +19,7 @@ def print_plan_info(robot):
 
 def monitor_plan(robot):
     """Monitors the execution plan of a robot"""
-    if robot.is_fault:
+    if robot.is_fault():
         raise Exception("Fault occurred on the connected robot, exiting ...")
     print_plan_info(robot)
 

@@ -55,7 +55,6 @@ class Gripper:
         """
         return round(self._force, 5)
 
-    @property
     def is_moving(self) -> bool:
         """
         Whether the gripper fingers are moving
@@ -85,7 +84,7 @@ class Gripper:
             time.sleep(init_delay)
 
     def move(
-        self, width: float, velocity: float, force_limit: float, init: bool = False
+            self, width: float, velocity: float, force_limit: float, init: bool = False
     ):
         """
         Move the gripper fingers with position control.

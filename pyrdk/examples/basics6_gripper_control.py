@@ -21,7 +21,7 @@ def print_gripper_states(gripper, logger, stop_event):
         gripper.get_gripper_states()
         print(f"width: {round(gripper.width, 2)}")
         print(f"force: {round(gripper.force, 2)}")
-        print(f"is_moving: {gripper.is_moving}")
+        print(f"is_moving: {gripper.is_moving()}")
         print("", flush=True)
         time.sleep(1)
 

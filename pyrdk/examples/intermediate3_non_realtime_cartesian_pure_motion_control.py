@@ -147,7 +147,7 @@ def main():
             time.sleep(period)
 
             # Monitor fault on the connected robot
-            if robot.is_fault:
+            if robot.is_fault():
                 raise Exception("Fault occurred on the connected robot, exiting ...")
 
             # Initialize target pose to initial pose

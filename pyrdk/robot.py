@@ -523,7 +523,6 @@ class Robot:
         """
         return self._robot.digital_inputs()
 
-    @property
     def is_stopped(self):
         """
         Whether the robot has come to a complete stop
@@ -531,7 +530,6 @@ class Robot:
         """
         return self._robot.stopped()
 
-    @property
     def is_operational(self) -> bool:
         """
         Whether the robot is ready to be operated
@@ -540,7 +538,6 @@ class Robot:
         """
         return self._robot.operational()
 
-    @property
     def is_busy(self) -> bool:
         """
         Whether the robot is busy
@@ -548,7 +545,6 @@ class Robot:
         """
         return self._robot.busy()
 
-    @property
     def is_fault(self) -> bool:
         """
         Whether the robot is in fault state
@@ -556,7 +552,6 @@ class Robot:
         """
         return self._robot.fault()
 
-    @property
     def is_recovery(self) -> bool:
         """
         Whether the robot is in recovery state
@@ -564,7 +559,6 @@ class Robot:
         """
         return self._robot.recovery()
 
-    @property
     def is_reduced(self) -> bool:
         """
         Whether the robot is in reduced state
@@ -572,7 +566,6 @@ class Robot:
         """
         return self._robot.reduced()
 
-    @property
     def is_enabling_button_pressed(self) -> bool:
         """
         Whether the enabling button is pressed
@@ -933,7 +926,7 @@ class Robot:
         :return: bool or exception
         """
         count = timeout / interval
-        while not self.is_operational:
+        while not self.is_operational():
             if count > 0:
                 count -= 1
                 time.sleep(interval)
@@ -946,7 +939,7 @@ class Robot:
         clear robot fault
         :return: bool
         """
-        if self.is_fault:
+        if self.is_fault():
             if not self._robot.ClearFault():
                 raise RobotFaultNotClearedException()
         return True
@@ -963,7 +956,7 @@ class Robot:
                 self._robot.Enable()
                 return self.wait_for_operational(timeout=timeout)
             except Exception as e:
-                if self.is_recovery:
+                if self.is_recovery():
                     raise RobotInRecoveryException()
                 else:
                     raise RobotEnableException() from e
@@ -978,7 +971,7 @@ class Robot:
 
     def run_auto_recovery(self):
         assert self._robot is not None, "Robot is not initialized"
-        if self.is_recovery:
+        if self.is_recovery():
             self._robot.RunAutoRecovery()
 
     def get_plan_names(self) -> List[str]:
@@ -1086,7 +1079,7 @@ class Robot:
         while count > 0:
             if callback:
                 callback(*args, **kwargs)
-            if not self.is_busy:
+            if not self.is_busy():
                 return True
             count -= 1
             time.sleep(interval)
@@ -1276,8 +1269,6 @@ class Robot:
         safety = Safety(self, self._safety_pwd)
         return safety.inputs
 
-        return list(device.list().keys())
-
     @property
     def traj_files_list(self) -> List[str]:
         """
@@ -1360,3 +1351,19 @@ class Robot:
         os.makedirs(save_dir, exist_ok=True)
         io = flexivrdk.FileIO(self._robot)
         io.DownloadProject(project_name, save_dir)
+
+    def download_collision_mesh(self, save_dir: str):
+        """
+        Download all collision mesh files of the connected robot and save to the specified directory
+        :param save_dir:
+        :return:
+        """
+        os.makedirs(save_dir, exist_ok=True)
+        io = flexivrdk.FileIO(self._robot)
+        io.DownloadCollisionMesh(save_dir)
+
+    def is_timeliness_failure_limit_reached(self) -> bool:
+        """
+        Whether the timeliness failure limit has been reached within a 1-second moving window.
+        """
+        return self._robot.reached_timeliness_failure_limit()

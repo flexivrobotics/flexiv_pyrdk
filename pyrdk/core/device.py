@@ -11,6 +11,7 @@ class Device:
         self.robot = robot
         self._device = flexivrdk.Device(self.robot._robot)
 
+    @property
     def exist(self):
         return self._device.exist(self.name)
 
@@ -23,5 +24,12 @@ class Device:
     def command(self, commands: object):
         return self._device.Command(self.name, commands)
 
+    @property
     def params(self):
         return self._device.params(self.name)
+
+    def is_enabled(self):
+        return self._device.enabled(self.name)
+
+    def is_connected(self):
+        return self._device.connected(self.name)

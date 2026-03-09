@@ -123,3 +123,16 @@ class Safety:
         :return:
         """
         return self._safety.safety_inputs()
+
+    def set_joint_output_torque_regulator(self, limiting_factor: float = 1.3, error_threshold: int = 50):
+        """
+        Change settings of the regulator on the joint output torques of the manipulator and external axes.
+        The regulator will limit the joints' total output torques so that the measured torques are less likely to exceed safety limits under large payload or fast/abrupt motions.
+        :param limiting_factor: Factor to limit the total output torques
+        :param error_threshold: If the unregulated output torque of any joint exceeds the configured regulator limit for more than [error_threshold] cycles consecutively,
+                                the robot will trigger a minor fault and stop.
+        """
+        self.robot.switch_mode_to_idle()
+        self._safety.SetJointOutputTorqueRegulator(
+            limiting_factor=limiting_factor,
+            error_threshold=error_threshold)
